@@ -1,0 +1,7 @@
+.border {
+    border: 1px solid black;
+}
+
+td.active {
+    background-color: black;
+}
