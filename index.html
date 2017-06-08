@@ -1,6 +1,11 @@
 <h1>Melody</h1>
 <div id="app">
   <table class="border">
+    <tr>
+      <td v-for="beat in beats">
+        <span v-if="beat.active">V</span>
+      </td>
+    </tr>
     <tr v-for="note in notes">
       <td v-for="beat in beats" v-on:click="toggle(note, beat)" v-bind:class="{ active: beat.notes[note.name] }" class="border">
         {{ note.name }}
@@ -59,39 +64,49 @@
   var app = new Vue({
     el: '#app',
     data: {
-      msPerBeat: 1000,
+      msPerBeat: 400,
       beats: beats,
       notes: notes,
-      timer: null
+      timer: null,
+      overlap: 2
     },
     methods: {
       toggle: function(note, beat) {
         beat.notes[note.name] = !beat.notes[note.name];
-        Synth.play(0, note.name, 4, this.msPerBeat / 1000);
+        Synth.play(0, note.name, 4, this.msPerBeat / 1000 * (1 + this.overlap));
       },
       play: function(){
+        var self = this;
         this.stop();
-        this.playRestOfBeats(beats, this.msPerBeat);
+        this.playBeatsStartingWith(0);
       },
-      playBeat: function(beat, msPerBeat) {
+      playBeat: function(index) {
+        var beat = this.beats[index];
         for (note in beat.notes) {
           if (beat.notes[note]) {
-            Synth.play(0, note, 4, msPerBeat / 1000);
+            Synth.play(0, note, 4, this.msPerBeat / 1000 * (1 + this.overlap));
           }
         }
       },
-      playRestOfBeats: function(beats, msPerBeat) {
-        if (beats.length == 0) {
+      playBeatsStartingWith: function(index) {
+        if (index == beats.length) {
           return;
         }
-        this.playBeat(beats[0], msPerBeat);
+        this.beats[index].active = true;
+        this.$forceUpdate(); // This should not be needeed i reactivity works as it should
+        this.playBeat(index);
         var self = this;
-        timer = setTimeout(function() {
-          self.playRestOfBeats(beats.slice(1), msPerBeat)
-        }, msPerBeat);
+        this.timer = setTimeout(function() {
+          self.beats[index].active = false;
+          self.playBeatsStartingWith(index + 1)
+        }, this.msPerBeat);
       },
       stop: function() {
-        clearTimeout(self.timer)
+        this.beats.forEach(function(beat) {
+          beat.active = false;
+        });
+        this.$forceUpdate(); // This should not be needeed i reactivity works as it should
+        clearTimeout(this.timer)
       }
     }
   })
