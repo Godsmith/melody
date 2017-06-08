@@ -7,10 +7,11 @@
       </td>
     </tr>
   </table>
-</div>
 
-<button>Play</button>
-<button>Stop</button>
+  <input type="text" v-model="msPerBeat">
+  <button v-on:click="play()">Play</button>
+  <button v-on:click="stop()">Stop</button>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
 <!-- BOOTSTRAP -->
@@ -25,7 +26,10 @@
 
 <script src="https://unpkg.com/vue"></script>
 <script src="audiosynth.js"></script>
+
 <script>
+
+
   var notes = [
     { name: 'C'},
     { name: 'C#'},
@@ -51,16 +55,43 @@
     });
   }
 
+
   var app = new Vue({
     el: '#app',
     data: {
+      msPerBeat: 1000,
       beats: beats,
-      notes: notes
+      notes: notes,
+      timer: null
     },
     methods: {
       toggle: function(note, beat) {
         beat.notes[note.name] = !beat.notes[note.name];
-        Synth.play(0, note.name, 4, 2);
+        Synth.play(0, note.name, 4, this.msPerBeat / 1000);
+      },
+      play: function(){
+        this.stop();
+        this.playRestOfBeats(beats, this.msPerBeat);
+      },
+      playBeat: function(beat, msPerBeat) {
+        for (note in beat.notes) {
+          if (beat.notes[note]) {
+            Synth.play(0, note, 4, msPerBeat / 1000);
+          }
+        }
+      },
+      playRestOfBeats: function(beats, msPerBeat) {
+        if (beats.length == 0) {
+          return;
+        }
+        this.playBeat(beats[0], msPerBeat);
+        var self = this;
+        timer = setTimeout(function() {
+          self.playRestOfBeats(beats.slice(1), msPerBeat)
+        }, msPerBeat);
+      },
+      stop: function() {
+        clearTimeout(self.timer)
       }
     }
   })
