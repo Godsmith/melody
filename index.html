@@ -15,6 +15,10 @@
   <input type="text" v-model="msPerBeat">
   <button v-on:click="play()">Play</button>
   <button v-on:click="stop()">Stop</button>
+  <div>
+    <textarea id="url">{{url}}</textarea>
+    <button v-on:click="copyUrl()">Copy to clipboard</button>
+  </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
@@ -30,9 +34,12 @@
 
 <script src="https://unpkg.com/vue"></script>
 <script src="audiosynth.js"></script>
+<script src="https://cdn.jsdelivr.net/lodash/4.17.4/lodash.min.js"></script>
 
 <script>
 
+  var DEFAULT_TEMPO = 300;
+  var BASE_URL = 'https://godsmith.github.io/melody/';
 
   var notes = [
     { name: 'C'},
@@ -63,16 +70,34 @@
   var app = new Vue({
     el: '#app',
     data: {
-      msPerBeat: 300,
+      msPerBeat: DEFAULT_TEMPO,
       beats: beats,
       notes: notes,
       timer: null,
-      overlap: 2
+      overlap: 2,
+      url: BASE_URL
+    },
+    created: function() {
+      var queryParameters = (function(a) {
+        if (a == "") return {};
+        var b = {};
+        for (var i = 0; i < a.length; ++i)
+        {
+          var p=a[i].split('=', 2);
+          if (p.length == 1)
+            b[p[0]] = "";
+          else
+            b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+        }
+        return b;
+      })(window.location.search.substr(1).split('&'));
+      this.msPerBeat = queryParameters['tempo'] || DEFAULT_TEMPO;
     },
     methods: {
       toggle: function(note, beat) {
         beat.notes[note.name] = !beat.notes[note.name];
         Synth.play(0, note.name, 4, this.msPerBeat / 1000 * (1 + this.overlap));
+        this.updateUrl();
       },
       play: function(){
         var self = this;
@@ -106,6 +131,32 @@
         });
         this.$forceUpdate(); // This should not be needed if reactivity works as it should
         clearTimeout(this.timer)
+      },
+      updateUrl: function() {
+        var url = BASE_URL;
+        url += '?beats=' + NUMBER_OF_BEATS
+        url += '&tempo=' + this.msPerBeat;
+        var notesBinary = '';
+        beats.forEach(function(beat) {
+          this.notes.forEach(function(note) {
+            if (beat.notes[note.name]) {
+              notesBinary += '1';
+            } else {
+              notesBinary += '0';
+            }
+          });
+        });
+        var notesBinaryChunks = _.chunk(notesBinary, 5);
+        var hexArray = notesBinaryChunks.map(function(chunk) {
+          return parseInt(chunk.join(''), 2).toString(32);
+        });
+        url += '&notes=' + hexArray.join('');
+        this.url = url;
+      },
+      copyUrl: function() {
+        var copyTextarea = document.querySelector('#url');
+        copyTextarea.select();
+        document.execCommand('copy')
       }
     }
   })
