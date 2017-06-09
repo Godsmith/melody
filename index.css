@@ -2,6 +2,13 @@
     border: 1px solid black;
 }
 
+
+td.note {
+    width: 20px;
+    height: 20px;
+}
+
 td.active {
     background-color: black;
 }
+

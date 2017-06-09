@@ -3,12 +3,11 @@
   <table class="border">
     <tr>
       <td v-for="beat in beats">
-        <span v-if="beat.active">V</span>
+        <span v-if="beat.active">V</span>&nbsp;
       </td>
     </tr>
     <tr v-for="note in notes">
-      <td v-for="beat in beats" v-on:click="toggle(note, beat)" v-bind:class="{ active: beat.notes[note.name] }" class="border">
-        {{ note.name }}
+      <td v-for="beat in beats" v-on:click="toggle(note, beat)" v-bind:class="{ active: beat.notes[note.name] }" class="note border">
       </td>
     </tr>
   </table>
@@ -64,7 +63,7 @@
   var app = new Vue({
     el: '#app',
     data: {
-      msPerBeat: 400,
+      msPerBeat: 300,
       beats: beats,
       notes: notes,
       timer: null,
@@ -80,8 +79,7 @@
         this.stop();
         this.playBeatsStartingWith(0);
       },
-      playBeat: function(index) {
-        var beat = this.beats[index];
+      playBeat: function(beat) {
         for (note in beat.notes) {
           if (beat.notes[note]) {
             Synth.play(0, note, 4, this.msPerBeat / 1000 * (1 + this.overlap));
@@ -93,8 +91,9 @@
           return;
         }
         this.beats[index].active = true;
-        this.$forceUpdate(); // This should not be needeed i reactivity works as it should
-        this.playBeat(index);
+        this.$forceUpdate(); // This should not be needed if reactivity works as it should
+        var beat = this.beats[index];
+        this.playBeat(beat);
         var self = this;
         this.timer = setTimeout(function() {
           self.beats[index].active = false;
@@ -105,7 +104,7 @@
         this.beats.forEach(function(beat) {
           beat.active = false;
         });
-        this.$forceUpdate(); // This should not be needeed i reactivity works as it should
+        this.$forceUpdate(); // This should not be needed if reactivity works as it should
         clearTimeout(this.timer)
       }
     }
